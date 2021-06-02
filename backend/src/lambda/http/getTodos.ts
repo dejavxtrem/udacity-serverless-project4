@@ -1,14 +1,14 @@
 import 'source-map-support/register'
 import { createLogger } from '../../utils/logger'
-import * as middy from 'middy'
+//import * as middy from 'middy'
 import { getTodos } from '../../Logic/todo'
 import { getUserId } from '../utils'
-import { cors } from 'middy/middlewares'
+//import { cors } from 'middy/middlewares'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 
 const logger = createLogger('getTodos')
 
-export const handler = middy(
+export const handler = 
 	async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 		logger.info('Getting getTodos Event: ', {
 			event
@@ -24,10 +24,10 @@ export const handler = middy(
 			})
 		}
 	}
-)
 
-handler.use(
-	cors({
-		credentials: true
-	})
-)
+
+// handler.use(
+// 	cors({
+// 		credentials: true
+// 	})
+// )

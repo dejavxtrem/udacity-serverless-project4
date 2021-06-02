@@ -7,8 +7,12 @@ plugins:
   # we use serverless reqvalidator and server documentation plugin to validate incoming http request using jsonschema
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
+  
 
 provider:
+  tracing:
+    lambda: true
+    apiGateway: true
   name: aws
   runtime: nodejs12.x
   # it uses the options "dev" if an option is not provided in  the CLI setup
@@ -57,8 +61,8 @@ functions:
     iamRoleStatements:
     - Effect: Allow
       Action:
-        -dynamodb:Query
-      Resources: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        - dynamodb:Query
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # # TODO: Configure this function
   # CreateTodo:
