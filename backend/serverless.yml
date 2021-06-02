@@ -1,0 +1,144 @@
+service:
+  name: serverless-todo-app
+
+plugins:
+  - serverless-webpack
+  - serverless-iam-roles-per-function
+  # we use serverless reqvalidator and server documentation plugin to validate incoming http request using jsonschema
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  # it uses the options "dev" if an option is not provided in  the CLI setup
+  stage: ${opt:stage, 'dev'}
+  #it uses the options "us-east-2" if an option is not provided in the CLI setup
+  region: ${opt:region, 'us-east-2'}
+
+
+  #Global variables setup
+  environment:
+    # The DynamoDB table have unique names. They need to be unique per account per region
+    # Names are UTF-8 encoded, case-sensitive and should be between 3 and 255 charaters long
+    TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
+
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Todo Api
+        description: Serverless Application with CRUD abilities for Todos
+    models:
+      - name: CreateTodo
+        contentType: application/json
+        schema: ${file(models/create-todo-request.json)}
+      - name: UpdateTodo
+        contentType: application/json
+        schema: ${file(models/update-todo-request.json)}
+    
+
+    
+functions:
+
+  Auth:
+    handler: src/lambda/auth/auth0Authorizer.handler
+
+  # TODO: Configure this function
+  GetTodos:
+    handler: src/lambda/http/getTodos.handler
+    events:
+      - http:
+          method: get
+          path: todos
+          cors: true
+          authorizer: Auth
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        -dynamodb:Query
+      Resources: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
+  # # TODO: Configure this function
+  # CreateTodo:
+  #   handler: src/lambda/http/createTodo.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: todos
+  #         authorizer: Auth
+  #         cors: true
+  #         reqValidatorName: RequestBodyValidator
+  #         documentation:
+  #           summary: Create a new todo Item
+  #           description: Create a todo item
+  #           requestModels:
+  #             'application/json': CreateTodo
+
+  #   iamRoleStatements:
+  #     # TODOS_TABLE permissions for all lambda functions
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:PutItem
+  #         - dynamodb:UpdateItem
+  #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+            
+
+  # # TODO: Configure this function
+  # UpdateTodo:
+  #   handler: src/lambda/http/updateTodo.handler
+  #   events:
+  #     - http:
+  #         method: patch
+  #         path: todos/{todoId}
+
+  # # TODO: Configure this function
+  # DeleteTodo:
+  #   handler: src/lambda/http/deleteTodo.handler
+  #   events:
+  #     - http:
+  #         method: delete
+  #         path: todos/{todoId}
+
+  # # TODO: Configure this function
+  # GenerateUploadUrl:
+  #   handler: src/lambda/http/generateUploadUrl.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: todos/{todoId}/attachment
+
+resources:
+  Resources:
+    # TODO: Add any necessary AWS resources
+    TodosDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        # single id field of type string which is the partition key
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: todoId
+            AttributeType: S
+        # so, we set the simple primary key as hash key
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TODOS_TABLE}
+
+
+# # Addtional Resources to validate  incoming request using the json schema
+# RequestBodyValidator:
+#       Type: AWS::ApiGateway::RequestValidator
+#       # we need a name and an id of the api which we will use
+#       Properties:
+#         Name: 'request-body-validator'
+#         RestApiId:
+#           Ref: ApiGatewayRestApi
+#         # it only validate body requests and not request parameters
+#         ValidateRequestBody: true
+#         ValidateRequestParameters: false 
