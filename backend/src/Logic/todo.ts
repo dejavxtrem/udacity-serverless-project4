@@ -1,7 +1,7 @@
 //import * as uuid from 'uuid'
 import { TodoItem } from '../models/TodoItem'
 import { TodoAccess } from '../dataLayer/todoAccess'
-import { parseUserId } from '../auth/utils'
+//import { parseUserId } from '../auth/utils'
 import * as uuid from 'uuid'
 import { createLogger } from '../utils/logger'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
@@ -18,7 +18,7 @@ const todoAccessProvider = new TodoAccess()
 
 export async function getTodos(jwtToken: string): Promise<TodoItem[]> {
 
-	const userId = parseUserId(jwtToken)
+	const userId = jwtToken
 
 	return todoAccessProvider.getTodos(userId)
 }
@@ -31,7 +31,7 @@ export async function createTodo(
 	jwtToken: string,
 	parsedBody: CreateTodoRequest
 ) {
-	const userId = parseUserId(jwtToken)
+	const userId = jwtToken
 	const todoId = uuid.v4()
 
 	logger.info('userId', userId)

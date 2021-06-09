@@ -10,16 +10,24 @@ const logger = createLogger('getTodos')
 
 export const handler = 
 	async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-		logger.info('Getting getTodos Event: ', {
-			event
-		})
+		
+		
 
 		const jwtToken = getUserId(event)
+
+		logger.info('Getting getTodos Event: ', {
+			jwtToken
+		})
+
 		const items = await getTodos(jwtToken)
 
 		return {
 			statusCode: 200,
-			body: JSON.stringify({
+			headers: {
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Crendentials': true
+			},
+			body: JSON.stringify({msg: `To-dos for actual users`,
 				items
 			})
 		}
