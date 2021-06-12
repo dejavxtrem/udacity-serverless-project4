@@ -19,13 +19,16 @@ provider:
   stage: ${opt:stage, 'dev'}
   #it uses the options "us-east-2" if an option is not provided in the CLI setup
   region: ${opt:region, 'us-east-2'}
-
+  # deploymentBucket:
+  #   skipPolicySetup: true
 
   #Global variables setup
   environment:
     # The DynamoDB table have unique names. They need to be unique per account per region
     # Names are UTF-8 encoded, case-sensitive and should be between 3 and 255 charaters long
     TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
+    TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-${self:provider.stage}
+    TODOS_SIGNED_URL_EXPIRATION: 900
     INDEX_NAME: dueDate
 
 custom:
@@ -89,33 +92,83 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
             
 
-  # # TODO: Configure this function
-  # UpdateTodo:
-  #   handler: src/lambda/http/updateTodo.handler
-  #   events:
-  #     - http:
-  #         method: patch
-  #         path: todos/{todoId}
+  # TODO: Configure this function
+  UpdateTodo:
+    handler: src/lambda/http/updateTodo.handler
+    events:
+      - http:
+          method: patch
+          path: todos/{todoId}
+          authorizer: Auth
+          cors: true
+          documentation:
+            summary: Update a todo item
+            description: update a todo item
+            requestModels:
+              'application/json': UpdateTodo
+    
+       
+    iamRoleStatements:
+      # TODOS_TABLE permissions for all lambda functions
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-  # # TODO: Configure this function
-  # DeleteTodo:
-  #   handler: src/lambda/http/deleteTodo.handler
-  #   events:
-  #     - http:
-  #         method: delete
-  #         path: todos/{todoId}
 
-  # # TODO: Configure this function
-  # GenerateUploadUrl:
-  #   handler: src/lambda/http/generateUploadUrl.handler
-  #   events:
-  #     - http:
-  #         method: post
-  #         path: todos/{todoId}/attachment
+          
+  # TODO: Configure this function
+  DeleteTodo:
+    handler: src/lambda/http/deleteTodo.handler
+    events:
+      - http:
+          method: delete
+          path: todos/{todoId}
+          authorizer: Auth
+          cors: true
+
+
+
+    iamRoleStatements:
+      # TODOS_TABLE permissions for all lambda functions
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      
+      - Effect: Allow
+        Action:
+          - s3:DeleteObject
+        Resource: arn:aws:s3:::${self:provider.environment.TODOS_IMAGES_S3_BUCKET}/*
+
+
+  # TODO: Configure this function
+  GenerateUploadUrl:
+    handler: src/lambda/http/generateUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: todos/{todoId}/attachment
+          authorizer: Auth
+          cors: true
+    
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.TODOS_IMAGES_S3_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
 resources:
   Resources:
-    # TODO: Add any necessary AWS resources
+    # Add DynamoDB Table Definition
+    # DynamoDB is schemaless, we need to define only the primary key and global secondary keys.
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -133,6 +186,42 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
+  
+    AttachmentsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.TODOS_IMAGES_S3_BUCKET}
+        # important so S3 can send the correct CORS HEADERS
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000        
+    
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: '2012-10-17'
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              # allows for anybody '*' to get objects of our s3 bucket
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.TODOS_IMAGES_S3_BUCKET}/*'
+        # specify which bucket this bucketPolicy should be applied
+        Bucket: AttachmentsBucket          
+              
 
 
 # Addtional Resources to validate  incoming request using the json schema

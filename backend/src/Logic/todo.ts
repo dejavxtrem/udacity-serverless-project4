@@ -5,6 +5,7 @@ import { TodoAccess } from '../dataLayer/todoAccess'
 import * as uuid from 'uuid'
 import { createLogger } from '../utils/logger'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
+import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 
 
 
@@ -50,4 +51,37 @@ export async function createTodo(
 	const toReturn = todoAccessProvider.createTodo(item)
 
 	return toReturn
+}
+
+//update-todo
+export async function updatedTodo(
+	jwtToken: string,
+	todoId: string,
+	parsedBody: UpdateTodoRequest
+) {
+	const userId = jwtToken
+	const result = todoAccessProvider.updateTodo(userId, todoId, parsedBody)
+
+	return result
+}
+
+
+//delete todo
+export async function deleteTodo(
+	jwtToken: string,
+	todoId: string,
+) {
+	const userId = jwtToken
+	const todoReturn = todoAccessProvider.deleteItem(userId , todoId)
+
+	return todoReturn
+}
+
+
+//upload urlpicture
+export async function generateUploadUrl(jwtToken: string, todoId: string) {
+	const userId = jwtToken
+	const result = todoAccessProvider.generateUploadUrl(userId, todoId)
+
+	return result
 }
