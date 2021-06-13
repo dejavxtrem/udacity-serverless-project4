@@ -34,7 +34,7 @@ export class TodoAccess {
 			})
 			.promise()
 
-		logger.info('Result', result)
+		//logger.info('Result', result)
 
 		const items = result.Items
 		return items as TodoItem[]
@@ -76,7 +76,7 @@ export class TodoAccess {
 			})
 			.promise()
 
-		logger.info('Item to be updated', todoToBeUpdate)
+		//logger.info('Item to be updated', todoToBeUpdate)
 
 		if (todoToBeUpdate.Items.length === 0) {
 			result = {
@@ -133,46 +133,16 @@ export class TodoAccess {
 
   //delete todo
   async deleteItem(userId: string, todoId: string) {
-	let result = {
-		statusCode: 200,
-		body: ''
-	}
-
-	let todoToBeDeleted = await this.docClient
-		.query({
+		const result = await this.docClient.delete({
 			TableName: this.todosTable,
-			KeyConditionExpression: 'userId = :userId AND todoId = :todoId',
-			ExpressionAttributeValues: {
-				':userId': userId,
-				':todoId': todoId
-			}
-		})
-		.promise()
-
-	if (todoToBeDeleted.Items.length === 0) {
-		result.statusCode = 404
-		result.body = 'The item to be deleted was not found'
-		return result
-	}
-
-	await this.docClient
-		.delete({
-			TableName: this.todosTable,
-			Key: {
-				userId,
-				todoId
-			}
-		})
-		.promise()
-
-	await this.s3
-		.deleteObject({
-			Bucket: this.s3Bucket,
-			Key: todoId
-		})
-		.promise()
-
-	return result
+			Key: {todoId,userId}
+		}).promise()
+       
+		logger.info('item to delete', {result})
+	      return {
+			  result,
+			  todoId
+		  }
 }
 
 

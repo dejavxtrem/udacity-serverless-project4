@@ -21,7 +21,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         'Access-Control-Allow-Crendentials': true
     },
     body: JSON.stringify({
-        body: returnItem.body
+        body: returnItem
     })
   }
 }

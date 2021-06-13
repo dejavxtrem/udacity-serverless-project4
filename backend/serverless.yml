@@ -27,7 +27,7 @@ provider:
     # The DynamoDB table have unique names. They need to be unique per account per region
     # Names are UTF-8 encoded, case-sensitive and should be between 3 and 255 charaters long
     TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
-    TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-${self:provider.stage}
+    TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-dejavu-${self:provider.stage}
     TODOS_SIGNED_URL_EXPIRATION: 900
     INDEX_NAME: dueDate
 
@@ -220,7 +220,7 @@ resources:
               Action: 's3:GetObject'
               Resource: 'arn:aws:s3:::${self:provider.environment.TODOS_IMAGES_S3_BUCKET}/*'
         # specify which bucket this bucketPolicy should be applied
-        Bucket: AttachmentsBucket          
+        Bucket: !Ref AttachmentsBucket          
               
 
 
