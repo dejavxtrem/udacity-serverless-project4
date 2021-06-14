@@ -149,29 +149,12 @@ export class TodoAccess {
 
 
 async generateUploadUrl(userId, todoId) {
-	let result = {
-		statusCode: 201,
-		body: ''
-	}
 
-	let checkIfExist = await this.docClient
-		.query({
-			TableName: this.todosTable,
-			KeyConditionExpression: 'userId = :userId AND todoId = :todoId',
-			ExpressionAttributeValues: {
-				':userId': userId,
-				':todoId': todoId
-			}
-		})
-		.promise()
-
-	if (checkIfExist.Items.length === 0) {
-		result = {
-			statusCode: 404,
-			body: 'The item to be update was not found'
-		}
-		return result
-	}
+	const result = this.s3.getSignedUrl("putObject", {
+        Bucket: this.s3Bucket,
+        Key: todoId,
+        Expires: parseInt(this.urlExpiration)
+    });
 
 	await this.docClient
 		.update({
@@ -182,18 +165,13 @@ async generateUploadUrl(userId, todoId) {
 			},
 			UpdateExpression: 'set #attachmentUrl =:attachmentUrl',
 			ExpressionAttributeValues: {
-				':attachmentUrl': `https://${this.s3Bucket}.s3.amazonaws.com/${todoId}`
+				':attachmentUrl': result.split("?")[0]
 			},
 			ExpressionAttributeNames: { '#attachmentUrl': 'attachmentUrl' },
 			ReturnValues: 'UPDATED_NEW'
 		})
 		.promise()
 
-	result.body = this.s3.getSignedUrl('putObject', {
-		Bucket: this.s3Bucket,
-		Key: todoId,
-		Expires: parseInt(this.urlExpiration)
-	})
 
 	return result
 }

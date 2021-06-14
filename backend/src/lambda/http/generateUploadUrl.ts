@@ -22,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   })
 
   return {
-    statusCode: uploadedResult.statusCode,
+    statusCode: 201,
     headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Crendentials': true
