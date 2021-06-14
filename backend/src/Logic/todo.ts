@@ -72,7 +72,7 @@ export async function deleteTodo(
 	todoId: string,
 ) {
 	const userId = jwtToken
-	const todoReturn = todoAccessProvider.deleteItem(userId , todoId)
+	const todoReturn = await todoAccessProvider.deleteItem(userId , todoId)
 
 	return todoReturn
 }
