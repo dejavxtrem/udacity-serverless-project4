@@ -7,6 +7,8 @@ plugins:
   # we use serverless reqvalidator and server documentation plugin to validate incoming http request using jsonschema
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
+  - serverless-offline
+  - serverless-dynamodb-local
   
 
 provider:
@@ -32,6 +34,17 @@ provider:
     INDEX_NAME: dueDate
 
 custom:
+
+  serverless-offline:
+    port: 3000
+
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    stages:
+      -${self:provider.stage}
   documentation:
     api:
       info:
