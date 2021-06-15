@@ -9,7 +9,7 @@ plugins:
   - serverless-aws-documentation
   - serverless-offline
   - serverless-dynamodb-local
-  
+  - serverless-plugin-canary-deployments
 
 provider:
   tracing:
@@ -32,6 +32,13 @@ provider:
     TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-dejavu-${self:provider.stage}
     TODOS_SIGNED_URL_EXPIRATION: 900
     INDEX_NAME: dueDate
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - codedeploy:*
+      Resource:
+        - "*"
 
 custom:
 
@@ -81,6 +88,8 @@ functions:
         - dynamodb:Query
       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
+      
+
   # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
@@ -103,6 +112,11 @@ functions:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
+
+    deploymentSettings:
+      type: Linear10PercentEvery1Minute
+      alias: Live
             
 
   # TODO: Configure this function
