@@ -27,13 +27,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       // })
     
       return {
-        statusCode: 200,
+        statusCode: uploadedResult.statusCode,
         headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Crendentials': true
         },
         body: JSON.stringify({
-          uploadUrl: uploadedResult
+          uploadUrl: uploadedResult.body
         })
       }
     } catch (error) {

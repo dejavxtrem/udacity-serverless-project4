@@ -151,13 +151,31 @@ export class TodoAccess {
 
 async generateAttachmentUploadUrl(userId, todoId, ) {
 
-	const result =  this.s3.getSignedUrl("putObject", {
-        Bucket: this.s3Bucket,
-        Key: todoId,
-        Expires: parseInt(this.urlExpiration)
-    })
+	let result = {
+		statusCode: 201,
+		body: ''
+	}
 
-	await this.docClient
+	let checkerExister = await this.docClient
+	.query({
+		TableName: this.todosTable,
+		KeyConditionExpression: 'userId = :userId AND todoId = :todoId',
+		ExpressionAttributeValues: {
+			':userId': userId,
+			':todoId': todoId
+		}
+	})
+	.promise()
+
+	if (checkerExister.Items.length === 0) {
+		result = {
+			statusCode: 404,
+			body: 'The item to be update was not found'
+		}
+		return result
+	}
+
+await this.docClient
 		.update({
 			TableName: this.todosTable,
 			Key: {
@@ -175,15 +193,15 @@ async generateAttachmentUploadUrl(userId, todoId, ) {
 		.promise()
 
 
-		logger.info('item to delete', {result})
+		 result.body =  this.s3.getSignedUrl("putObject", {
+			Bucket: this.s3Bucket,
+			Key: todoId,
+			Expires: parseInt(this.urlExpiration)
+		})
+	
 
 	return result
 }
-
-
-
-
-
 
 
 }

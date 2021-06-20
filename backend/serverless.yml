@@ -58,7 +58,7 @@ provider:
     TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
     TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-dejavu-${self:provider.stage}
     TODOS_SIGNED_URL_EXPIRATION: 900
-    INDEX_NAME: dueDate
+    INDEX_NAME: todoId
 
   # iamRoleStatements:
   #   - Effect: Allow
@@ -201,8 +201,8 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:UpdateItem
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
 
 resources:
   Resources:
@@ -225,7 +225,7 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
-        LocalSecondaryIndexes:
+        GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.INDEX_NAME}
             KeySchema:
               - AttributeName: userId
