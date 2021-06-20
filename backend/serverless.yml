@@ -11,34 +11,6 @@ plugins:
   - serverless-dynamodb-local
   - serverless-plugin-canary-deployments
 
-provider:
-  tracing:
-    lambda: true
-    apiGateway: true
-  name: aws
-  runtime: nodejs12.x
-  # it uses the options "dev" if an option is not provided in  the CLI setup
-  stage: ${opt:stage, 'dev'}
-  #it uses the options "us-east-2" if an option is not provided in the CLI setup
-  region: ${opt:region, 'us-east-2'}
-  # deploymentBucket:
-  #   skipPolicySetup: true
-
-  #Global variables setup
-  environment:
-    # The DynamoDB table have unique names. They need to be unique per account per region
-    # Names are UTF-8 encoded, case-sensitive and should be between 3 and 255 charaters long
-    TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
-    TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-dejavu-${self:provider.stage}
-    TODOS_SIGNED_URL_EXPIRATION: 900
-    INDEX_NAME: dueDate
-
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - codedeploy:*
-      Resource:
-        - "*"
 
 custom:
 
@@ -61,10 +33,41 @@ custom:
     models:
       - name: CreateTodo
         contentType: application/json
-        schema: ${file(models/create-todo-request.json)}
+        schema: ${file(validatemodels/create-todo-request.json)}
       - name: UpdateTodo
         contentType: application/json
-        schema: ${file(models/update-todo-request.json)}
+        schema: ${file(validatemodels/update-todo-request.json)}
+
+provider:
+  tracing:
+    lambda: true
+    apiGateway: true
+  name: aws
+  runtime: nodejs12.x
+  # it uses the options "dev" if an option is not provided in  the CLI setup
+  stage: ${opt:stage, 'dev'}
+  #it uses the options "us-east-2" if an option is not provided in the CLI setup
+  region: ${opt:region, 'us-east-2'}
+  # deploymentBucket:
+  #   skipPolicySetup: true
+
+  #Global variables setup
+  environment:
+    # The DynamoDB table have unique names. They need to be unique per account per region
+    # Names are UTF-8 encoded, case-sensitive and should be between 3 and 255 charaters long
+    TODOS_TABLE: ${self:service.name}-Todos-${self:provider.stage}
+    TODOS_IMAGES_S3_BUCKET: ${self:service.name}-images-dejavu-${self:provider.stage}
+    TODOS_SIGNED_URL_EXPIRATION: 900
+    INDEX_NAME: dueDate
+
+  # iamRoleStatements:
+  #   - Effect: Allow
+  #     Action:
+  #       - codedeploy:*
+  #     Resource:
+  #       - "*"
+
+
     
 
     
@@ -99,6 +102,11 @@ functions:
           path: todos
           authorizer: Auth
           cors: true
+          reqValidatorName: RequestBodyValidator
+          request:
+          schema:
+            schema:
+            application/json: ${validatemodels/create-todo-request.json)}
           documentation:
             summary: Create a new todo Item
             description: Create a todo item
@@ -114,9 +122,9 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
 
-    deploymentSettings:
-      type: Linear10PercentEvery1Minute
-      alias: Live
+    # deploymentSettings:
+    #   type: Linear10PercentEvery1Minute
+    #   alias: Live
             
 
   # TODO: Configure this function
@@ -127,6 +135,10 @@ functions:
           method: patch
           path: todos/{todoId}
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          request:
+          schema:
+            ${file(validatemodels/update-todo-request.json)}
           cors: true
           documentation:
             summary: Update a todo item
@@ -188,8 +200,8 @@ functions:
         Resource: arn:aws:s3:::${self:provider.environment.TODOS_IMAGES_S3_BUCKET}/*
       - Effect: Allow
         Action:
-          - dynamodb:Query
           - dynamodb:UpdateItem
+          - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
 resources:
@@ -250,15 +262,26 @@ resources:
         Bucket: !Ref AttachmentsBucket          
               
 
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
 
 # Addtional Resources to validate  incoming request using the json schema
-  # RequestBodyValidator:
-  #     Type: AWS::ApiGateway::RequestValidator
-  #     # we need a name and an id of the api which we will use
-  #     Properties:
-  #       Name: 'request-body-validator'
-  #       RestApiId:
-  #         Ref: ApiGatewayRestApi
-  #       # it only validate body requests and not request parameters
-  #       ValidateRequestBody: true
-  #       ValidateRequestParameters: false 
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      # we need a name and an id of the api which we will use
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        # it only validate body requests and not request parameters
+        ValidateRequestBody: true
+        ValidateRequestParameters: false

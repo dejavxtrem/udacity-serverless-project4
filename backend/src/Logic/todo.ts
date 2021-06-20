@@ -81,7 +81,7 @@ export async function deleteTodo(
 //upload urlpicture
 export async function generateUploadUrl(jwtToken: string, todoId: string) {
 	const userId = jwtToken
-	const result = todoAccessProvider.generateUploadUrl(userId, todoId)
+	const result = todoAccessProvider.generateAttachmentUploadUrl(userId, todoId)
 
 	return result
 }

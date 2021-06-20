@@ -138,7 +138,8 @@ export class TodoAccess {
 			Key: {todoId,userId}
 		}).promise()
        
-		logger.info('item to delete', {result})
+		
+
 	      return {
 			  result,
 			  todoId
@@ -148,13 +149,13 @@ export class TodoAccess {
 
 
 
-async generateUploadUrl(userId, todoId) {
+async generateAttachmentUploadUrl(userId, todoId, ) {
 
-	const result = this.s3.getSignedUrl("putObject", {
+	const result =  this.s3.getSignedUrl("putObject", {
         Bucket: this.s3Bucket,
         Key: todoId,
         Expires: parseInt(this.urlExpiration)
-    });
+    })
 
 	await this.docClient
 		.update({
@@ -165,13 +166,16 @@ async generateUploadUrl(userId, todoId) {
 			},
 			UpdateExpression: 'set #attachmentUrl =:attachmentUrl',
 			ExpressionAttributeValues: {
-				':attachmentUrl': result.split("?")[0]
+				':attachmentUrl': `https://${this.s3Bucket}.s3.amazonaws.com/${todoId}`
+
 			},
 			ExpressionAttributeNames: { '#attachmentUrl': 'attachmentUrl' },
 			ReturnValues: 'UPDATED_NEW'
 		})
 		.promise()
 
+
+		logger.info('item to delete', {result})
 
 	return result
 }

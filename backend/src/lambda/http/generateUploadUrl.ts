@@ -13,22 +13,33 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const jwtToken = getUserId(event)
 
  
+  logger.info('Processing event', {
+    event
+  })
   // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
 
-  const uploadedResult = await generateUploadUrl(todoId,jwtToken)
+    try {
 
-  logger.info('Processing generatUpload url', {
-      uploadedResult
-  })
+      const uploadedResult = await generateUploadUrl(todoId,jwtToken)
 
-  return {
-    statusCode: 201,
-    headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Crendentials': true
-    },
-    body: JSON.stringify({
-        uploadedResult
+      // logger.info('Processing generatUpload url', {
+      //   uploadedResult
+      // })
+    
+      return {
+        statusCode: 200,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Crendentials': true
+        },
+        body: JSON.stringify({
+          uploadUrl: uploadedResult
+        })
+      }
+    } catch (error) {
+      logger.info('An error occured upload picture', {
+        error:error
     })
-  }
+    }
+
 }
