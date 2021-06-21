@@ -167,15 +167,22 @@ async generateAttachmentUploadUrl(userId, todoId, ) {
 	})
 	.promise()
 
+	logger.info('dynamodb table item', {
+        checkerExister,
+		userId,
+		todoId
+      })
+    
+
 	if (checkerExister.Items.length === 0) {
 		result = {
 			statusCode: 404,
 			body: 'The item to be update was not found'
 		}
 		return result
-	}
+	} else {
 
-await this.docClient
+		await this.docClient
 		.update({
 			TableName: this.todosTable,
 			Key: {
@@ -199,6 +206,9 @@ await this.docClient
 			Expires: parseInt(this.urlExpiration)
 		})
 	
+
+	}
+
 
 	return result
 }

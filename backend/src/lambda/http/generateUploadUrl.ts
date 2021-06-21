@@ -20,7 +20,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     try {
 
-      const uploadedResult = await generateUploadUrl(todoId,jwtToken)
+      const uploadedResult = await generateUploadUrl(jwtToken,todoId)
 
       // logger.info('Processing generatUpload url', {
       //   uploadedResult
