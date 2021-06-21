@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   // TODO: Remove a TODO item by id
 
-  const returnItem = await deleteTodo(todoId, jwtToken)
+  const returnItem = await deleteTodo(jwtToken, todoId)
 
   return {
     statusCode: 201,
